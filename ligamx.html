@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liga MX Pro – Team Builder</title>
+  <title>Liga MX Pro – Frontend Stats (Direct EA)</title>
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
       background: #0b1320;
       color: #eaeaea;
-      margin: 0;
       padding: 20px;
     }
 
@@ -24,172 +23,141 @@
       margin-bottom: 30px;
     }
 
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 20px;
-    }
-
-    .panel {
+    table {
+      width: 100%;
+      border-collapse: collapse;
       background: #111a2e;
-      border-radius: 10px;
-      padding: 15px;
+      border-radius: 8px;
+      overflow: hidden;
     }
 
-    .panel h2 {
-      margin-top: 0;
-      font-size: 16px;
+    thead {
+      background: #1b2a4a;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      cursor: pointer;
+      font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
       color: #cfd6ff;
     }
 
-    .player {
-      background: #1b2a4a;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      cursor: grab;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
+    tbody tr:nth-child(even) {
+      background: #0f1a33;
     }
 
-    .player:active {
-      cursor: grabbing;
+    tbody tr:hover {
+      background: #1c2b4d;
     }
 
-    .tag {
-      font-size: 11px;
-      background: #0b1320;
-      padding: 3px 6px;
-      border-radius: 4px;
-      color: #9aa4bf;
-    }
-
-    .teams {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 15px;
-    }
-
-    .team {
-      border: 2px dashed #2a3d6a;
-      border-radius: 10px;
-      padding: 10px;
-      min-height: 140px;
-    }
-
-    .team h3 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
+    .error {
       text-align: center;
-    }
-
-    .team.america {
-      border-color: #f7d117;
-    }
-
-    .team.chivas {
-      border-color: #c8102e;
-    }
-
-    .team.tigres {
-      border-color: #f9a602;
-    }
-
-    .hint {
-      text-align: center;
-      font-size: 12px;
-      color: #9aa4bf;
-      margin-top: 8px;
+      color: #ff6b6b;
+      margin-top: 30px;
     }
   </style>
 </head>
 <body>
 
-<h1>Liga MX Pro – Team Builder</h1>
-<div class="subtitle">Drag players into teams · Frontend only</div>
+<h1>Soccer FC</h1>
+<div class="subtitle">Frontend-only · Direct EA API (testing)</div>
 
-<div class="container">
+<table id="statsTable" style="display:none;">
+  <thead>
+    <tr>
+      <th onclick="sortBy('name')">Player</th>
+      <th onclick="sortBy('pos')">Pos</th>
+      <th onclick="sortBy('games')">GP</th>
+      <th onclick="sortBy('goals')">Goals</th>
+      <th onclick="sortBy('assists')">Assists</th>
+      <th onclick="sortBy('rating')">Rating</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
 
-  <!-- PLAYER POOL -->
-  <div class="panel">
-    <h2>Players</h2>
-
-    <div class="player" draggable="true" data-player="Iron_Brigade1991">
-      <span>K. Wing</span>
-      <span class="tag">MID</span>
-    </div>
-
-    <div class="player" draggable="true" data-player="KingAbel49">
-      <span>A. Rodriguez</span>
-      <span class="tag">MID</span>
-    </div>
-
-    <div class="player" draggable="true" data-player="ADSLooch">
-      <span>Gôônéy</span>
-      <span class="tag">FWD</span>
-    </div>
-
-    <div class="player" draggable="true" data-player="MauryLeal11">
-      <span>Fatzinho</span>
-      <span class="tag">MID</span>
-    </div>
-
-  </div>
-
-  <!-- TEAMS -->
-  <div class="panel">
-    <h2>Teams (Aligned Clubs)</h2>
-
-    <div class="teams">
-
-      <div class="team america" data-team="soccer_fc">
-        <h3>Soccer FC<br><small>Club América</small></h3>
-      </div>
-
-      <div class="team chivas" data-team="rojo_fc">
-        <h3>Rojo FC<br><small>Chivas</small></h3>
-      </div>
-
-      <div class="team tigres" data-team="norte_fc">
-        <h3>Norte FC<br><small>Tigres</small></h3>
-      </div>
-
-    </div>
-
-    <div class="hint">Drag players into a team box</div>
-  </div>
-
-</div>
+<div id="error" class="error"></div>
 
 <script>
-  let draggedPlayer = null;
+  // EA ENDPOINTS YOU PROVIDED
+  const PLAYER_STATS_URL = "https://proclubs.ea.com/api/fc/members/stats?platform=common-gen5&clubId=1275113";
+  const FRIENDLY_MATCHES_URL = "https://proclubs.ea.com/api/fc/clubs/matches?matchType=friendlyMatch&platform=common-gen5&clubIds=1275113";
 
-  document.querySelectorAll('.player').forEach(player => {
-    player.addEventListener('dragstart', e => {
-      draggedPlayer = player;
-      setTimeout(() => player.style.opacity = '0.4', 0);
+  let players = [];
+  let sortKey = 'goals';
+  let sortDir = 'desc';
+
+  async function loadPlayers() {
+    try {
+      const res = await fetch(PLAYER_STATS_URL, {
+        method: 'GET',
+        headers: {
+          // These are BROWSER headers only – EA may still block via CORS
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
+      });
+
+      if (!res.ok) throw new Error('Request blocked');
+
+      const data = await res.json();
+
+      players = data.members.map(p => ({
+        name: p.proName || p.name,
+        pos: p.favoritePosition,
+        games: Number(p.gamesPlayed),
+        goals: Number(p.goals),
+        assists: Number(p.assists),
+        rating: Number(p.ratingAve)
+      }));
+
+      render();
+      document.getElementById('statsTable').style.display = 'table';
+    } catch (err) {
+      document.getElementById('error').innerText =
+        'EA blocked this request (CORS). This works for local testing or extensions, but production requires Render proxy.';
+    }
+  }
+
+  function sortBy(key) {
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = 'desc';
+    }
+    render();
+  }
+
+  function render() {
+    players.sort((a, b) => {
+      return sortDir === 'asc' ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
     });
 
-    player.addEventListener('dragend', e => {
-      player.style.opacity = '1';
-      draggedPlayer = null;
-    });
-  });
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
 
-  document.querySelectorAll('.team').forEach(team => {
-    team.addEventListener('dragover', e => e.preventDefault());
-
-    team.addEventListener('drop', e => {
-      e.preventDefault();
-      if (draggedPlayer) {
-        team.appendChild(draggedPlayer);
-      }
+    players.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.name}</td>
+        <td>${p.pos}</td>
+        <td>${p.games}</td>
+        <td>${p.goals}</td>
+        <td>${p.assists}</td>
+        <td>${p.rating.toFixed(1)}</td>
+      `;
+      tbody.appendChild(tr);
     });
-  });
+  }
+
+  loadPlayers();
 </script>
 
 </body>
