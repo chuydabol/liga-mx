@@ -1,1 +1,32 @@
+{
+  "league": "United Pro Clubs League",
+  "season": "Season 1",
+  "conferences": {
+    "East": [
+      {
+        "id": "E1",
+        "name": "Team A",
+        "short": "A",
+        "clubId": null
+      },
+      { "id": "E2", "name": "Team B", "short": "B", "clubId": null },
+      { "id": "E3", "name": "Team C", "short": "C", "clubId": null },
+      { "id": "E4", "name": "Team D", "short": "D", "clubId": null },
+      { "id": "E5", "name": "Team E", "short": "E", "clubId": null },
+      { "id": "E6", "name": "Team F", "short": "F", "clubId": null },
+      { "id": "E7", "name": "Team G", "short": "G", "clubId": null },
+      { "id": "E8", "name": "Team H", "short": "H", "clubId": null }
+    ],
+    "West": [
+      { "id": "W1", "name": "Team I", "short": "I", "clubId": null },
+      { "id": "W2", "name": "Team J", "short": "J", "clubId": null },
+      { "id": "W3", "name": "Team K", "short": "K", "clubId": null },
+      { "id": "W4", "name": "Team L", "short": "L", "clubId": null },
+      { "id": "W5", "name": "Team M", "short": "M", "clubId": null },
+      { "id": "W6", "name": "Team N", "short": "N", "clubId": null },
+      { "id": "W7", "name": "Team O", "short": "O", "clubId": null },
+      { "id": "W8", "name": "Team P", "short": "P", "clubId": null }
+    ]
+  }
+}
 
