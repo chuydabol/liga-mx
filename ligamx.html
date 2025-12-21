@@ -3,162 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liga MX Pro – Frontend Stats (Direct EA)</title>
+  <title>United Pro Clubs League</title>
   <style>
     body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #0b1320;
-      color: #eaeaea;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: #fff;
+    }
+    header {
+      background: #0f172a;
+      padding: 20px;
+      border-bottom: 1px solid #1e293b;
+    }
+    h1 { margin: 0; }
+    .container {
+      max-width: 1100px;
+      margin: auto;
       padding: 20px;
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
+    .conference {
+      margin-bottom: 40px;
     }
-
-    .subtitle {
-      text-align: center;
-      color: #9aa4bf;
-      margin-bottom: 30px;
+    .conference h2 {
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 5px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #111a2e;
-      border-radius: 8px;
-      overflow: hidden;
+      margin-top: 10px;
     }
-
-    thead {
-      background: #1b2a4a;
-    }
-
     th, td {
       padding: 10px;
-      text-align: center;
-      font-size: 14px;
+      border-bottom: 1px solid #1e293b;
+      text-align: left;
     }
-
     th {
-      cursor: pointer;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: #cfd6ff;
+      color: #94a3b8;
+      font-size: 13px;
     }
-
-    tbody tr:nth-child(even) {
-      background: #0f1a33;
+    .schedule {
+      margin-top: 60px;
     }
-
-    tbody tr:hover {
-      background: #1c2b4d;
+    .week {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
     }
-
-    .error {
-      text-align: center;
-      color: #ff6b6b;
-      margin-top: 30px;
+    .empty {
+      color: #94a3b8;
+      font-style: italic;
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>United Pro Clubs League</h1>
+    <p>Season 1</p>
+  </header>
 
-<h1>Soccer FC</h1>
-<div class="subtitle">Frontend-only · Direct EA API (testing)</div>
+  <div class="container">
 
-<table id="statsTable" style="display:none;">
-  <thead>
-    <tr>
-      <th onclick="sortBy('name')">Player</th>
-      <th onclick="sortBy('pos')">Pos</th>
-      <th onclick="sortBy('games')">GP</th>
-      <th onclick="sortBy('goals')">Goals</th>
-      <th onclick="sortBy('assists')">Assists</th>
-      <th onclick="sortBy('rating')">Rating</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
-</table>
+    <section id="standings"></section>
 
-<div id="error" class="error"></div>
+    <section class="schedule">
+      <h2>Schedule</h2>
+      <div id="schedule"></div>
+    </section>
 
-<script>
-  // EA ENDPOINTS YOU PROVIDED
-  const PLAYER_STATS_URL = "https://proclubs.ea.com/api/fc/members/stats?platform=common-gen5&clubId=1275113";
-  const FRIENDLY_MATCHES_URL = "https://proclubs.ea.com/api/fc/clubs/matches?matchType=friendlyMatch&platform=common-gen5&clubIds=1275113";
+  </div>
 
-  let players = [];
-  let sortKey = 'goals';
-  let sortDir = 'desc';
+  <script>
+    const TEAMS_URL = '../data/teams/teams.json';
+    const SCHEDULE_URL = '../data/seasons/s1/schedule.json';
 
-  async function loadPlayers() {
-    try {
-      const res = await fetch(PLAYER_STATS_URL, {
-        method: 'GET',
-        headers: {
-          // These are BROWSER headers only – EA may still block via CORS
-          'Accept': 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9'
-        }
+    async function loadLeaguePage() {
+      const teamsData = await fetch(TEAMS_URL).then(r => r.json());
+      renderStandings(teamsData.conferences);
+
+      try {
+        const scheduleData = await fetch(SCHEDULE_URL).then(r => r.json());
+        renderSchedule(scheduleData, teamsData);
+      } catch {
+        document.getElementById('schedule').innerHTML = '<p class="empty">Schedule not available yet.</p>';
+      }
+    }
+
+    function renderStandings(conferences) {
+      const container = document.getElementById('standings');
+      container.innerHTML = '<h2>Standings</h2>';
+
+      for (const confName in conferences) {
+        const confDiv = document.createElement('div');
+        confDiv.className = 'conference';
+        confDiv.innerHTML = `
+          <h2>${confName} Conference</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Series W</th>
+                <th>Series L</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${conferences[confName].map(t => `
+                <tr>
+                  <td>${t.name}</td>
+                  <td>0</td>
+                  <td>0</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        container.appendChild(confDiv);
+      }
+    }
+
+    function renderSchedule(schedule, teamsData) {
+      const container = document.getElementById('schedule');
+      if (!schedule.length) {
+        container.innerHTML = '<p class="empty">Schedule will appear once series are created.</p>';
+        return;
+      }
+
+      schedule.forEach(series => {
+        const weekDiv = document.createElement('div');
+        weekDiv.className = 'week';
+        weekDiv.innerHTML = `
+          <strong>Week ${series.week}</strong><br />
+          ${series.home} vs ${series.away}
+        `;
+        container.appendChild(weekDiv);
       });
-
-      if (!res.ok) throw new Error('Request blocked');
-
-      const data = await res.json();
-
-      players = data.members.map(p => ({
-        name: p.proName || p.name,
-        pos: p.favoritePosition,
-        games: Number(p.gamesPlayed),
-        goals: Number(p.goals),
-        assists: Number(p.assists),
-        rating: Number(p.ratingAve)
-      }));
-
-      render();
-      document.getElementById('statsTable').style.display = 'table';
-    } catch (err) {
-      document.getElementById('error').innerText =
-        'EA blocked this request (CORS). This works for local testing or extensions, but production requires Render proxy.';
     }
-  }
 
-  function sortBy(key) {
-    if (sortKey === key) {
-      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortKey = key;
-      sortDir = 'desc';
-    }
-    render();
-  }
-
-  function render() {
-    players.sort((a, b) => {
-      return sortDir === 'asc' ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
-    });
-
-    const tbody = document.getElementById('tbody');
-    tbody.innerHTML = '';
-
-    players.forEach(p => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.name}</td>
-        <td>${p.pos}</td>
-        <td>${p.games}</td>
-        <td>${p.goals}</td>
-        <td>${p.assists}</td>
-        <td>${p.rating.toFixed(1)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  loadPlayers();
-</script>
-
+    loadLeaguePage();
+  </script>
 </body>
 </html>
