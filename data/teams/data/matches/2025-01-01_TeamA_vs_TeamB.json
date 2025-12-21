@@ -1,0 +1,17 @@
+{
+  "matchId": "FAKE-001",
+  "date": "2025-01-01",
+  "conference": "East",
+  "series": 1,
+  "game": 1,
+  "home": {
+    "id": "A",
+    "name": "Team A",
+    "goals": 3
+  },
+  "away": {
+    "id": "B",
+    "name": "Team B",
+    "goals": 1
+  }
+}
